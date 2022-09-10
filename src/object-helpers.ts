@@ -1,47 +1,3 @@
-import { MissingPageInfo } from "./errors";
-
-const isObject = (value: any) =>
-  Object.prototype.toString.call(value) === "[object Object]";
-
-function findPaginatedResourcePath(responseData: any): string[] {
-  const paginatedResourcePath = deepFindPathToProperty(
-    responseData,
-    "pageInfo"
-  );
-  if (paginatedResourcePath.length === 0) {
-    throw new MissingPageInfo(responseData);
-  }
-  return paginatedResourcePath;
-}
-
-const deepFindPathToProperty = (
-  object: any,
-  searchProp: string,
-  path: string[] = []
-): string[] => {
-  for (const key of Object.keys(object)) {
-    const currentPath = [...path, key];
-    const currentValue = object[key];
-
-    if (currentValue.hasOwnProperty(searchProp)) {
-      return currentPath;
-    }
-
-    if (isObject(currentValue)) {
-      const result = deepFindPathToProperty(
-        currentValue,
-        searchProp,
-        currentPath
-      );
-      if (result.length > 0) {
-        return result;
-      }
-    }
-  }
-
-  return [];
-};
-
 /**
  * The interfaces of the "get" and "set" functions are equal to those of lodash:
  * https://lodash.com/docs/4.17.15#get
@@ -68,4 +24,4 @@ const set = (object: any, path: string[], mutator: Mutator) => {
   }
 };
 
-export { findPaginatedResourcePath, get, set };
+export { get, set };

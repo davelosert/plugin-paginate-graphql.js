@@ -1,7 +1,8 @@
-import { extractPageInfos } from "./extract-page-info";
+import { extractPageInfosAt } from "./extract-page-info";
 import { Octokit } from "@octokit/core";
 import { getCursorFrom, hasAnotherPage } from "./page-info";
 import { MissingCursorChange } from "./errors";
+import { extractPaginationPath } from "./extract-pagination-path";
 
 const createIterator = (octokit: Octokit) => {
   return <ResponseType = any>(
@@ -10,6 +11,8 @@ const createIterator = (octokit: Octokit) => {
   ) => {
     let nextPageExists = true;
     let parameters = { ...initialParameters };
+
+    const pageInfoPath = extractPaginationPath(query);
 
     return {
       [Symbol.asyncIterator]: () => ({
@@ -21,12 +24,12 @@ const createIterator = (octokit: Octokit) => {
             parameters
           );
 
-          const pageInfoContext = extractPageInfos(response);
-          const nextCursorValue = getCursorFrom(pageInfoContext.pageInfo);
-          nextPageExists = hasAnotherPage(pageInfoContext.pageInfo);
+          const pageInfo = extractPageInfosAt(response, pageInfoPath);
+          const nextCursorValue = getCursorFrom(pageInfo);
+          nextPageExists = hasAnotherPage(pageInfo);
 
           if (nextPageExists && nextCursorValue === parameters.cursor) {
-            throw new MissingCursorChange(pageInfoContext, nextCursorValue);
+            throw new MissingCursorChange(pageInfoPath, nextCursorValue);
           }
 
           parameters = {

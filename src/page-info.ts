@@ -12,11 +12,6 @@ type PageInfoBackward = {
 
 type PageInfo = PageInfoForward | PageInfoBackward;
 
-type PageInfoContext = {
-  pageInfo: PageInfo;
-  pathInQuery: string[];
-};
-
 const isForwardSearch = (
   givenPageInfo: PageInfo
 ): givenPageInfo is PageInfoForward => {
@@ -31,10 +26,4 @@ const hasAnotherPage = (pageInfo: PageInfo): boolean =>
 
 export { getCursorFrom, hasAnotherPage };
 
-export type {
-  PageInfo,
-  PageInfoForward,
-  PageInfoBackward,
-  PageInfoContext,
-  CursorValue,
-};
+export type { PageInfo, PageInfoForward, PageInfoBackward, CursorValue };

@@ -1,6 +1,7 @@
-import { mergeResponses } from "../src/merge-responses";
+import { mergeResponsesAt } from "../src/merge-responses";
 
 describe(".mergeResponses()", (): void => {
+  const path = ["repository", "issues"];
   it('merges the "nodes" array of a response if it exists.', async (): Promise<void> => {
     const response1 = {
       repository: {
@@ -19,7 +20,7 @@ describe(".mergeResponses()", (): void => {
       },
     };
 
-    const result = mergeResponses(response1, response2);
+    const result = mergeResponsesAt(response1, response2, path);
 
     expect(result).toEqual({
       repository: {
@@ -41,7 +42,7 @@ describe(".mergeResponses()", (): void => {
       },
     };
 
-    const result = mergeResponses({} as any, response1);
+    const result = mergeResponsesAt({} as any, response1, path);
 
     expect(result).toEqual({
       repository: {
@@ -74,7 +75,7 @@ describe(".mergeResponses()", (): void => {
       },
     };
 
-    const result = mergeResponses(response1, response2);
+    const result = mergeResponsesAt(response1, response2, path);
 
     expect(result).toEqual({
       repository: {
@@ -110,7 +111,7 @@ describe(".mergeResponses()", (): void => {
       },
     };
 
-    const result = mergeResponses(response1, response2);
+    const result = mergeResponsesAt(response1, response2, path);
 
     expect(result).toEqual({
       repository: {

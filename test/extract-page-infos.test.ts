@@ -1,9 +1,18 @@
-import { extractPageInfos } from "../src/extract-page-info";
-import { PageInfoContext } from "../src/page-info";
+import { MissingPageInfo } from "../src/errors";
+import { extractPageInfosAt } from "../src/extract-page-info";
+import { PageInfo } from "../src/page-info";
 
 describe("extractPageInfos()", (): void => {
-  it("returns throws if no pageInfo object exists", async (): Promise<void> => {
-    expect(() => extractPageInfos({ test: { nested: "value" } })).toThrow();
+  it("throws if no pageInfo object exists", async (): Promise<void> => {
+    expect(() =>
+      extractPageInfosAt({ test: { nested: "value" } }, ["test", "nested"])
+    ).toThrowError(MissingPageInfo);
+  });
+
+  it("throws if path does not exist at all", async (): Promise<void> => {
+    expect(() =>
+      extractPageInfosAt({ test: { nested: "value" } }, ["other", "path"])
+    ).toThrowError(MissingPageInfo);
   });
 
   it("returns pageInfo with their path if exists", () => {
@@ -18,10 +27,9 @@ describe("extractPageInfos()", (): void => {
       },
     };
 
-    expect(extractPageInfos(queryResult)).toEqual<PageInfoContext>({
-      pageInfo: { hasNextPage: true, endCursor: "endCursor" },
-      pathInQuery: ["data", "repository", "issues"],
-    });
+    expect(
+      extractPageInfosAt(queryResult, ["data", "repository", "issues"])
+    ).toEqual<PageInfo>({ hasNextPage: true, endCursor: "endCursor" });
   });
 
   it("returns only first found pageInfo.", async (): Promise<void> => {
@@ -40,10 +48,9 @@ describe("extractPageInfos()", (): void => {
       },
     };
 
-    expect(extractPageInfos(queryResult)).toEqual<PageInfoContext>({
-      pageInfo: { hasNextPage: true, endCursor: "endCursor1" },
-      pathInQuery: ["data", "repository", "issues"],
-    });
+    expect(
+      extractPageInfosAt(queryResult, ["data", "repository", "issues"])
+    ).toEqual<PageInfo>({ hasNextPage: true, endCursor: "endCursor1" });
   });
 
   it("correctly returns null-cursors.", async (): Promise<void> => {
@@ -58,9 +65,8 @@ describe("extractPageInfos()", (): void => {
       },
     };
 
-    expect(extractPageInfos(queryResult)).toEqual<PageInfoContext>({
-      pageInfo: { hasNextPage: false, endCursor: null },
-      pathInQuery: ["data", "repository", "issues"],
-    });
+    expect(
+      extractPageInfosAt(queryResult, ["data", "repository", "issues"])
+    ).toEqual<PageInfo>({ hasNextPage: false, endCursor: null });
   });
 });

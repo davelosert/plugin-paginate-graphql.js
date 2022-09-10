@@ -1,5 +1,9 @@
 import fetchMock from "fetch-mock";
-import { MissingCursorChange, MissingPageInfo } from "../src/errors";
+import {
+  MissingCursorChange,
+  MissingCursorVariable,
+  MissingPageInfo,
+} from "../src/errors";
 import { PageInfo } from "../src/page-info";
 import { MockOctokit, PatchedOctokit } from "./testHelpers/mock-octokit";
 import {
@@ -16,9 +20,9 @@ describe("pagination", () => {
     });
 
     const actualResponse = await octokit.graphql.paginate(`
-      query paginate ($cursor: String) {
+      query paginate ($cursor_repository_issues: String) {
         repository(owner: "octokit", name: "rest.js") {
-          issues(first: 10, after: $cursor) {
+          issues(first: 10, after: $cursor_repository_issues) {
             nodes {
               title
             }
@@ -38,9 +42,9 @@ describe("pagination", () => {
     const responses = createResponsePages({ amount: 3 });
     const { octokit, getCallCount } = MockOctokit({ responses });
     const actualResponse = await octokit.graphql.paginate<TestResponseType>(`
-        query paginate ($cursor: String) {
+        query paginate ($cursor_repository_issues: String) {
           repository(owner: "octokit", name: "rest.js") {
-            issues(first: 10, after: $cursor) {
+            issues(first: 10, after: $cursor_repository_issues) {
               nodes {
                 title
               }
@@ -75,9 +79,9 @@ describe("pagination", () => {
     });
 
     await octokit.graphql.paginate<TestResponseType>(`
-        query paginate ($cursor: String) {
+        query paginate ($cursor_repository_issues: String) {
           repository(owner: "octokit", name: "rest.js") {
-            issues(first: 10, after: $cursor) {
+            issues(first: 10, after: $cursor_repository_issues) {
               nodes {
                 title
               }
@@ -104,7 +108,7 @@ describe("pagination", () => {
 
     await octokit.graphql.paginate<TestResponseType>(
       `
-      query paginate($cursor: String, $organization: String!) {
+      query paginate($cursor_repository_issues: String, $organization: String!) {
         repository(owner: $organization, name: "rest.js") {
           issues(first: 10, after: $curosr) {
             nodes {
@@ -131,8 +135,8 @@ describe("pagination", () => {
     });
   });
 
-  it(".paginate() simply returns if empty response", async (): Promise<void> => {
-    const { octokit, getCallCount } = MockOctokit({
+  it(".paginate() throws if no cursor given.", async (): Promise<void> => {
+    const { octokit } = MockOctokit({
       responses: [
         {
           repository: {
@@ -146,7 +150,8 @@ describe("pagination", () => {
       ],
     });
 
-    const result = await octokit.graphql.paginate(`{
+    const func = async () =>
+      await octokit.graphql.paginate(`{
         repository(owner: "octokit", name: "plugin-paginate-graphql.js") {
           repositoryTopics(first: 3) {
             nodes{
@@ -160,8 +165,7 @@ describe("pagination", () => {
         }
       }`);
 
-    expect(getCallCount()).toEqual(1);
-    expect(result.repository.nodes).toHaveLength(0);
+    await expect(func).rejects.toThrowError(MissingCursorVariable);
   });
 
   it('.paginate() paginates backwards using the "startCursor" and "hasPreviousPage" if given.', async (): Promise<void> => {
@@ -174,9 +178,9 @@ describe("pagination", () => {
     });
 
     const actualResponse = await octokit.graphql.paginate<TestResponseType>(`
-      query paginate($cursor: String) {
+      query paginate($cursor_repository_issues: String) {
         repository(owner: "octokit", name: "rest.js") {
-          issues(first: 10, after: $cursor) {
+          issues(first: 10, after: $cursor_repository_issues) {
             nodes {
               title
             }
@@ -211,9 +215,9 @@ describe("pagination", () => {
       responses,
     });
     const actualResponse = await octokit.graphql.paginate<TestResponseType>(
-      `query paginate($cursor: String)
+      `query paginate($cursor_repository_issues: String)
         repository(owner: "octokit", name: "rest.js") {
-          issues(first: 10, after: $cursor) {
+          issues(first: 10, after: $cursor_repository_issues) {
             edges {
               node {
                 title
@@ -246,9 +250,9 @@ describe("pagination", () => {
     const responses = createResponsePages({ amount: 3 });
     const { octokit } = MockOctokit({ responses });
     const pageIterator = octokit.graphql.paginate.iterator<TestResponseType>(
-      `query paginate($cursor: String) {
+      `query paginate($cursor_repository_issues: String) {
         repository(owner: "octokit", name: "rest.js") {
-          issues(first: 10, after: $cursor) {
+          issues(first: 10, after: $cursor_repository_issues) {
             nodes {
               title
             }
@@ -293,9 +297,9 @@ describe("pagination", () => {
 
     try {
       await octokit.graphql.paginate(
-        `query($cursor: String) {
+        `query($cursor_repository_issues: String) {
           repository(owner: "octokit", name: "rest.js") {
-            issues(first: 10, before: $cursor) {
+            issues(first: 10, before: $cursor_repository_issues) {
               nodes {
                 title
               }
@@ -333,9 +337,9 @@ describe("pagination", () => {
 
     try {
       await octokit.graphql.paginate(`
-      query paginate($cursor: String) {
+      query paginate($cursor_repository_issues: String) {
         repository(owner: "octokit", name: "rest.js") {
-          issues(first: 10, after: $cursor) {
+          issues(first: 10, after: $cursor_repository_issues) {
             nodes {
               title,
             }
@@ -366,7 +370,7 @@ describe("pagination", () => {
               line: 3,
             },
           ],
-          message: "Field 'bioHtml' doesn't exist on type 'User'",
+          message: "Field 'noExists' doesn't exist on type 'Issue'",
         },
       ],
     };
@@ -375,9 +379,14 @@ describe("pagination", () => {
       .post("https://api.github.com/graphql", mockResponse);
 
     const octokit = new PatchedOctokit({ request: { fetch: mock } });
-    const query = `{
-        viewer {
-          bioHtml
+    const query = `
+      query paginate($cursor_repository_issues: String) {
+        repository(owner: "octokit", name: "rest.js") {
+          issues(first: 10, after: $cursor_repository_issues) {
+            nodes {
+              noExists,
+            }
+          }
         }
       }`;
 
@@ -389,7 +398,7 @@ describe("pagination", () => {
       .catch((error) => {
         expect(error.message).toEqual(
           "Request failed due to following response errors:\n" +
-            " - Field 'bioHtml' doesn't exist on type 'User'"
+            " - Field 'noExists' doesn't exist on type 'Issue'"
         );
         expect(error.errors).toStrictEqual(mockResponse.errors);
         expect(error.request.query).toEqual(query);
@@ -404,9 +413,9 @@ describe("pagination", () => {
     const octokit = new PatchedOctokit({ request: { fetch: mock } });
     const func = async () =>
       await octokit.graphql.paginate<TestResponseType>(`
-      query paginate($cursor: String) {
+      query paginate($cursor_repository_issues: String) {
         repository(owner: "octokit", name: "rest.js") {
-          issues(first: 10, after: $cursor) {
+          issues(first: 10, after: $cursor_repository_issues) {
             edges {
               node {
                 title

@@ -1,14 +1,13 @@
-import { findPaginatedResourcePath, get, set } from "./object-helpers";
+import { get, set } from "./object-helpers";
 
-const mergeResponses = <ResponseType extends object = any>(
+const mergeResponsesAt = <ResponseType extends object = any>(
   response1: ResponseType,
-  response2: ResponseType
+  response2: ResponseType,
+  path: string[]
 ): ResponseType => {
   if (Object.keys(response1).length === 0) {
     return Object.assign(response1, response2);
   }
-
-  const path = findPaginatedResourcePath(response1);
 
   const nodesPath = [...path, "nodes"];
   const newNodes = get(response2, nodesPath);
@@ -32,4 +31,4 @@ const mergeResponses = <ResponseType extends object = any>(
   return response1;
 };
 
-export { mergeResponses };
+export { mergeResponsesAt };
